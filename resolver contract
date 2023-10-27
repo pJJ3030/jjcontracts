@@ -49,7 +49,6 @@ contract ConditionResolverUsingReality {
 
           if(resolutionResult.length > 0){
             IConditionalTokens(conditionalTokenAddress).reportPayouts(question_id, resolutionResult);
-            emit Resolved(msg.sender, question_id, resolutionResult);
           }
 
        }
