@@ -1,0 +1,11 @@
+{
+  "provider": "https://eth-goerli.g.alchemy.com/v2/wJTDaYXPs_nbl3P9obri0CZxUiSqoOzp",
+  "contractAddress": "0x7f0A45827b029C52a03f4806FFfa354e9ABD9574",
+  "tokenType": "ERC1155",
+  "fromBlock": "2327111",
+  "toBlock": "2327141",
+  "blocksPerBatch": 20,
+  "delay": 10,
+  "checkIfContract": "yes",
+  "totalPBTToAllot": "100"
+}
