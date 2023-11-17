@@ -11,10 +11,28 @@ const Parameters = require("../parameters").get();
 const readdirAsync = promisify(fs.readdir);
 const readFileAsync = promisify(fs.readFile);
 
+function sumHexValues(hexArray) {
+  // Initialize a variable to store the decimal sum
+  let decimalSum = 0;
+
+  // Iterate through the array and convert each hex value to decimal
+  for (const item of hexArray) {
+    // Remove '0x' from the hex string and parse it as an integer
+    const decimalValue = parseInt(item._hex, 16);
+    decimalSum += decimalValue;
+  }
+
+  // Convert the decimal sum back to a hex string
+  const hexSum = '0x' + decimalSum.toString(16);
+
+  return hexSum;
+}
+
 const getMinimalERC20 = pastEvents => {
   return pastEvents.map(tx => {
     return {
       transactionHash: tx.transactionHash,
+      blockNumber: tx.blockNumber,
       from: tx.returnValues["0"],
       to: tx.returnValues["1"],
       value: tx.returnValues["2"]._hex
@@ -25,13 +43,25 @@ const getMinimalERC20 = pastEvents => {
 
 const getMinimalERC1155 = pastEvents => {
   return pastEvents.map(tx => {
-    return {
-      transactionHash: tx.transactionHash,
-      from: tx.returnValues["1"],
-      to: tx.returnValues["2"],
-      value: tx.returnValues["4"]._hex
-      // value: "0x" + Number(tx.returnValues["2"]).toString(16)
-    };
+    if(tx.event == "TransferBatch") {
+      return {
+        transactionHash: tx.transactionHash,
+        blockNumber: tx.blockNumber,
+        from: tx.returnValues["1"],
+        to: tx.returnValues["2"],
+        value: sumHexValues(tx.returnValues["4"])
+        // .reduce((a, b) => a + b, 0)
+      };
+    } else {
+      return {
+        transactionHash: tx.transactionHash,
+        blockNumber: tx.blockNumber,
+        from: tx.returnValues["1"],
+        to: tx.returnValues["2"],
+        value: tx.returnValues["4"]._hex
+        // value: "0x" + Number(tx.returnValues["2"]).toString(16)
+      };
+    }
   });
 };
 

@@ -2,6 +2,8 @@
 var BigNumber = require("bignumber.js");
 const enumerable = require("linq");
 
+const Config = require("./config").getConfig();
+
 module.exports.createBalances = async data => {
   const balances = new Map();
   const closingBalances = [];
@@ -14,7 +16,7 @@ module.exports.createBalances = async data => {
     let withdrawals = (balances.get(wallet) || {}).withdrawals || new BigNumber(0);
 
     if (event.value) {
-      deposits = deposits.plus(new BigNumber(event.value));
+      deposits = deposits.plus((new BigNumber(event.value)).multipliedBy(Config.toBlock-event.blockNumber));
       balances.set(wallet, { deposits, withdrawals });
 
     }
@@ -27,7 +29,7 @@ module.exports.createBalances = async data => {
     let withdrawals = (balances.get(wallet) || {}).withdrawals || new BigNumber(0);
 
     if (event.value) {
-      withdrawals = withdrawals.plus(new BigNumber(event.value));
+      withdrawals = withdrawals.plus((new BigNumber(event.value)).multipliedBy(Config.toBlock-event.blockNumber));
       balances.set(wallet, { deposits, withdrawals });
 
     }

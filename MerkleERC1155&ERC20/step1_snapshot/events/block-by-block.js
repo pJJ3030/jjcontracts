@@ -19,10 +19,14 @@ module.exports.tryBlockByBlock = async (contract, start, end, symbol) => {
     console.log("%d% Block %d of %d", Math.floor((counter / (end - start)) * 100), i, end);
 
     let pastEvents;
+    let pastEvents1;
+    let pastEvents2;
     if(Config.tokenType == "ERC20") {
       pastEvents = await contract.getPastEvents("Transfer", { fromBlock: i, toBlock: i });
     } else if(Config.tokenType == "ERC1155") {
-      pastEvents = await contract.getPastEvents("TransferSingle", { fromBlock: i, toBlock: i });
+      pastEvents1 = await contract.getPastEvents("TransferSingle", { fromBlock: i, toBlock: i });
+      pastEvents2 = await contract.getPastEvents("TransferBatch", { fromBlock: i, toBlock: i });
+      pastEvents = pastEvents1.concat(pastEvents2);
     }
 
     if (pastEvents.length) {
