@@ -17,8 +17,6 @@ contract ConditionResolverUsingReality {
    bytes32 resolvedToOpt2 = 0x0000000000000000000000000000000000000000000000000000000000000001;
    bytes32 resolvedToInvalid = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
    
-   event Resolved(address indexed _resolver, bytes32 indexed _question_id, uint256[] _result);
-
    function getGnonisAnswerForRealityFinalAnswer(bytes32 final_answer) view internal returns (uint256 [] memory){
         uint256[] memory dataToBeReturned = new uint256[](2);
         if(final_answer==resolvedToInvalid){
