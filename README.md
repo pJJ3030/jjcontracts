@@ -3,6 +3,8 @@
 The projects purpose is to have launch a prediction market using the gnosis conditional token frame work. The PolyBet Token serves as the governance token of the prediction market and it will distributed to users to incentivize certain actions such as adding liquidity to the pool which enables trading.
 
 ### Functional, Technical Requirements
+This repository consists of 2 Staking, and 1 Merkle distribution contracts. *All 3 contracts are mutually independent*, and do not interact with each other on-chain in any way.
+
 Functional and Technical Requirements can be found as follows:
 
 Merkle: [Merkle requirements](README_Merkle.md) document
@@ -18,17 +20,14 @@ Recommended Node version is 20.0.0 and above.
 # install dependencies
 $ npm install
 
-# build for production
-$ npm run build
-
-# clean, build, run tests
-$ npm run rebuild
+# compile
+$ npx hardhat compile
 
 # run tests
-$ npm run test
+$ npm hardhat test
 
 # compute tests coverage
-$ npm run coverage
+$ npx hardhat coverage
 ```
 
 # Project Structure

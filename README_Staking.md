@@ -1,8 +1,10 @@
 # Functional Requirements
-## Roles
+## Roles & Authorization
 Both staking contracts have just a single role:
 
 * User: can deposit/withdraw tokens for staking.
+
+All functions are publicly callable, and none of the functions require any special authorization.
 
 ## Features
 Both Staking contracts differ in the fundamental difference that one allows staking of PBT token, while the other allows staking of any ERC20 token. 
@@ -34,3 +36,17 @@ A general view of the Staking contract structures and interactions between diffe
 PBT Staking: [PBT Staking architecture](docs/PBT_Staking_Architecture.svg) document
 
 LP Staking: [LP Staking architecture](docs/LP_Staking_Architecture.svg) document
+
+# Contract Information
+
+This section contains detailed information (their purpose, assets, functions, and events) about the contracts used in the project.
+
+Staking contracts that differ in the fundamental difference that one allows staking of PBT token, while the other allows staking of any ERC20 token.  Both contracts provide PBT tokens as staking rewards.
+
+1. The admin deploys the contracts, specifying the reward duration, rate and LP token (if applicable).
+2. The admin sends the required amount of PBT tokens (for reward) to the contract address.
+2. Users can deposit tokens to earn PBT rewards.
+3. Users can choose between compounding, claiming and withdrawing from the contracts as many times as they prefer.
+4. The contract gives out rewards until the end time, as specified during the contract deployment.
+
+Kindly refer to the in-code NatSpecs for information on variables and function description.
