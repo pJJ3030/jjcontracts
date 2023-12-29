@@ -87,6 +87,19 @@ describe("PBT LP Staking", function () {
 		expect(pendingRewards).to.equal(pbtPerBlock.mul(endBlock-currentBlock-1));
 	});
 
+	it("Single user - Pending PBT 3", async function () {
+		const depositAmount = oneUnit.mul(1000);
+		const duration = 10;
+
+		await mineBlocks(duration);
+		let currentBlock = await getCurrentBlock();
+		// await pbtLPStaking.connect(addr1).deposit(depositAmount);
+		await mineBlocks(endBlock-currentBlock);
+
+		let pendingRewards = await pbtLPStaking.pendingPbt(addr1.address);
+		expect(pendingRewards).to.equal(0);
+	});
+
 	it("Two users - Pending PBT", async function () {
 		const depositAmount = oneUnit.mul(1000);
 		const duration = 10;
@@ -99,6 +112,18 @@ describe("PBT LP Staking", function () {
 
 		expect(await pbtLPStaking.pendingPbt(addr1.address)).to.equal(pbtPerBlock.mul(duration * 1.5));
 		expect(await pbtLPStaking.pendingPbt(addr2.address)).to.equal(pbtPerBlock.mul(duration / 2));
+	});
+
+	it("Single user - Zero deposit", async function () {
+		const depositAmount = oneUnit.mul(1000);
+		const duration = 10;
+
+		let startingBalance = await pbt.balanceOf(addr1.address);
+		await mineBlocks(duration);
+		await pbtLPStaking.connect(addr1).deposit(0);
+		await mineBlocks(duration);
+
+		expect(await pbt.balanceOf(addr1.address)).to.equal(startingBalance);
 	});
 
 	it("Single user - Multi deposit", async function () {
@@ -115,6 +140,20 @@ describe("PBT LP Staking", function () {
 		let deposit = await pbtLPStaking.userInfo(addr1.address);
 		await pbtLPStaking.connect(addr1).withdraw(deposit[0]);
 		expect(await pbt.balanceOf(addr1.address)).to.equal(startingBalance.add(pbtPerBlock.mul(duration*2)));
+	});
+
+	it("Single user - Zero Withdraw", async function () {
+		const depositAmount = oneUnit.mul(1000);
+		const duration = 10;
+
+		let startingBalance = await pbt.balanceOf(addr1.address);
+		await mineBlocks(duration);
+		await pbtLPStaking.connect(addr1).deposit(depositAmount);
+
+		await mineBlocks(duration - 1);
+
+		await pbtLPStaking.connect(addr1).withdraw(0);
+		expect(await pbt.balanceOf(addr1.address)).to.equal(startingBalance.add(pbtPerBlock.mul(duration)));
 	});
 
 	it("Single user - Withdraw", async function () {
@@ -141,6 +180,7 @@ describe("PBT LP Staking", function () {
 		await mineBlocks(duration + 10);
 
 		await pbtLPStaking.connect(addr1).withdraw(depositAmount);
+		await pbtLPStaking.connect(addr1).withdraw(0);
 		expect(await pbt.balanceOf(addr1.address)).to.equal(startingBalance.add(pbtPerBlock.mul(duration)));
 	});
 

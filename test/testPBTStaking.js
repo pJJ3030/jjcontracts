@@ -133,6 +133,7 @@ describe("PBT Staking", function () {
 		await mineBlocks(duration + 10);
 
 		await pbtStaking.connect(addr1).withdraw(depositAmount);
+		await pbtStaking.connect(addr1).deposit(0);
 		expect(await pbt.balanceOf(addr1.address)).to.equal(startingBalance.add(pbtPerBlock.mul(duration)));
 	});
 
