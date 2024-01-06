@@ -108,11 +108,13 @@ contract PBTStaking {
      */
     function emergencyWithdraw() external {
         UserInfo storage user = userInfo[msg.sender];
-        pbt.transfer(address(msg.sender), user.amount);
+        uint256 amountToSend = user.amount;
 
         user.amount = 0;
         user.rewardDebt = 0;
+        totalDeposits -= amountToSend;
 
+        pbt.transfer(address(msg.sender), amountToSend);
         emit EmergencyWithdraw(msg.sender, user.amount);
     }
 
@@ -151,6 +153,7 @@ contract PBTStaking {
         uint256 pending = (user.amount * accPbtPerShare / 1e12) - user.rewardDebt;
 
         require(_amount <= user.amount, "Withdrawal exceeds balance");
+        require(pbt.balanceOf(address(this)) >= totalDeposits + pending, "Insufficient PBT for all rewards");
 
         user.amount -= _amount;
         user.rewardDebt = user.amount * accPbtPerShare / 1e12;
