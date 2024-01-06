@@ -35,6 +35,8 @@ contract PBTLPStaking {
     mapping(address => UserInfo) public userInfo;
     // The source of all PBT rewards
     uint256 public pbtForRewards;
+    // Total LP Token deposits
+    uint256 public totalDeposit;
 
     // Events emitted for tracking user activities.
     event Deposit(address indexed user, uint256 amount);
@@ -72,7 +74,7 @@ contract PBTLPStaking {
         PoolInfo storage pool = poolInfo;
         UserInfo storage user = userInfo[_user];
         uint256 accPbtPerShare = pool.accPbtPerShare;
-        uint256 lpSupply = pool.lpToken.balanceOf(address(this));
+        uint256 lpSupply = totalDeposit;
 
         uint256 blockToUse = block.number;
         if (blockToUse > pool.endBlock) {
@@ -104,6 +106,7 @@ contract PBTLPStaking {
         user.amount += _amount;
         user.rewardDebt = (user.amount * pool.accPbtPerShare) / 1e12;
         if (_amount > 0) {
+            totalDeposit += _amount;
             pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
         }
         emit Deposit(msg.sender, _amount);
@@ -129,6 +132,7 @@ contract PBTLPStaking {
         }
 
         if (_amount > 0) {
+            totalDeposit -= _amount;
             pool.lpToken.safeTransfer(address(msg.sender), _amount);
         }
         emit Withdraw(msg.sender, _amount);
@@ -144,6 +148,7 @@ contract PBTLPStaking {
         uint256 amountToSend = user.amount;
         user.amount = 0;
         user.rewardDebt = 0;
+        totalDeposit -= amountToSend;
         pool.lpToken.safeTransfer(msg.sender, amountToSend);
         emit EmergencyWithdraw(msg.sender, amountToSend);
     }
@@ -162,7 +167,7 @@ contract PBTLPStaking {
             blockToUse = pool.endBlock;
         }
 
-        uint256 lpSupply = pool.lpToken.balanceOf(address(this));
+        uint256 lpSupply = totalDeposit;
         if (lpSupply == 0) {
             pool.lastRewardBlock = blockToUse;
             return;
