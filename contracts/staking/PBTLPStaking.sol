@@ -100,11 +100,12 @@ contract PBTLPStaking {
                 pbt.transfer(msg.sender, pending);
             }
         }
+
+        user.amount += _amount;
+        user.rewardDebt = (user.amount * pool.accPbtPerShare) / 1e12;
         if (_amount > 0) {
             pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
         }
-        user.amount += _amount;
-        user.rewardDebt = (user.amount * pool.accPbtPerShare) / 1e12;
         emit Deposit(msg.sender, _amount);
     }
 
@@ -118,12 +119,15 @@ contract PBTLPStaking {
         require(user.amount >= _amount, "withdraw: not enough balance");
         _updatePool();
         uint256 pending = ((user.amount * pool.accPbtPerShare) / 1e12) - user.rewardDebt;
+
+        user.amount -= _amount;
+        user.rewardDebt = (user.amount * pool.accPbtPerShare) / 1e12;
+
         if (pending > 0) {
             pbtForRewards -= pending;
             pbt.transfer(msg.sender, pending);
         }
-        user.amount -= _amount;
-        user.rewardDebt = (user.amount * pool.accPbtPerShare) / 1e12;
+
         if (_amount > 0) {
             pool.lpToken.safeTransfer(address(msg.sender), _amount);
         }
@@ -137,10 +141,11 @@ contract PBTLPStaking {
     function emergencyWithdraw() external {
         PoolInfo storage pool = poolInfo;
         UserInfo storage user = userInfo[msg.sender];
-        pool.lpToken.safeTransfer(address(msg.sender), user.amount);
-        emit EmergencyWithdraw(msg.sender, user.amount);
+        uint256 amountToSend = user.amount;
         user.amount = 0;
         user.rewardDebt = 0;
+        pool.lpToken.safeTransfer(msg.sender, amountToSend);
+        emit EmergencyWithdraw(msg.sender, amountToSend);
     }
 
     /**
