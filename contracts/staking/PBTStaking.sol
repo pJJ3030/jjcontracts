@@ -15,14 +15,15 @@ contract PBTStaking {
         uint256 rewardDebt;    // The debt of rewards accumulated by the user.
     }
 
+    uint256 public immutable endBlock; // The last block number when PBT distribution ends.
     uint256 public lastRewardBlock;    // Last block number that PBT distribution occurred.
-    uint256 public endBlock;           // The last block number when PBT distribution ends.
-    uint256 accPbtPerShare;            // Accumulated PBT per share, times 1e12.
+    uint256 private accPbtPerShare;            // Accumulated PBT per share, times 1e12.
 
-    // The PBT TOKEN
-    IERC20 public immutable pbt;
+    // The PBT token, assumed to be completely ERC20 compatible and non-malicious
+    IERC20 public immutable PBT;
     // PBT tokens minted per block.
-    uint256 public pbtPerBlock;
+    uint256 public immutable pbtPerBlock;
+
     // The source of all PBT rewards
     uint256 public pbtForRewards;
     // The total PBT deposits
@@ -44,7 +45,7 @@ contract PBTStaking {
      */
     constructor(IERC20 _pbt, uint256 _pbtPerBlock, uint256 _startBlock, uint256 _totalRewards) {
         require(_startBlock > block.number, "StartBlock must be in the future");
-        pbt = _pbt;
+        PBT = _pbt;
         pbtPerBlock = _pbtPerBlock;
         lastRewardBlock = _startBlock;
         endBlock = _startBlock + _totalRewards / _pbtPerBlock;
@@ -114,7 +115,7 @@ contract PBTStaking {
         user.rewardDebt = 0;
         totalDeposits -= amountToSend;
 
-        pbt.transfer(address(msg.sender), amountToSend);
+        PBT.transfer(address(msg.sender), amountToSend);
         emit EmergencyWithdraw(msg.sender, user.amount);
     }
 
@@ -135,9 +136,10 @@ contract PBTStaking {
         user.rewardDebt = user.amount * accPbtPerShare / 1e12;
 
         totalDeposits += _amount + pending;
+        pbtForRewards -= pending;
 
         if (_amount > 0) {
-            pbt.transferFrom(address(msg.sender), address(this), _amount);
+            PBT.transferFrom(address(msg.sender), address(this), _amount);
         }
         emit Deposit(msg.sender, _amount);
     }
@@ -153,14 +155,15 @@ contract PBTStaking {
         uint256 pending = (user.amount * accPbtPerShare / 1e12) - user.rewardDebt;
 
         require(_amount <= user.amount, "Withdrawal exceeds balance");
-        require(pbt.balanceOf(address(this)) >= totalDeposits + pending, "Insufficient PBT for all rewards");
+        require(PBT.balanceOf(address(this)) >= totalDeposits + pbtForRewards, "Insufficient PBT for all rewards");
 
         user.amount -= _amount;
         user.rewardDebt = user.amount * accPbtPerShare / 1e12;
 
         totalDeposits -= _amount;
+        pbtForRewards -= pending;
 
-        pbt.transfer(address(msg.sender), _amount + pending);
+        PBT.transfer(address(msg.sender), _amount + pending);
         emit Withdraw(msg.sender, _amount + pending);
     }
 

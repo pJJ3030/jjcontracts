@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 contract PBTDistributor {
 
+    // The PBT token, assumed to be completely ERC20 compatible and non-malicious
     IERC20 public immutable PBT;
     bytes32 public immutable merkleRoot;
     mapping(address => bool) public hasClaimed;

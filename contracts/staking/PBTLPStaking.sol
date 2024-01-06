@@ -25,10 +25,11 @@ contract PBTLPStaking {
         uint256 accPbtPerShare;  // Accumulated PBT per share, times 1e12.
     }
 
-    // The PBT TOKEN
-    IERC20 public pbt;
+    // The PBT token, assumed to be completely ERC20 compatible and non-malicious
+    IERC20 public immutable PBT;
     // PBT tokens minted per block.
-    uint256 public pbtPerBlock;
+    uint256 public immutable pbtPerBlock;
+
     // Info of the staking pool.
     PoolInfo public poolInfo;
     // Info of each user that stakes LP tokens.
@@ -55,7 +56,7 @@ contract PBTLPStaking {
         require(_startBlock > block.number, "StartBlock must be in the future");
         require(_lpToken != _pbt, "LP token must not be PBT");
 
-        pbt = _pbt;
+        PBT = _pbt;
         pbtPerBlock = _pbtPerBlock;
         poolInfo = PoolInfo({
             lpToken: _lpToken,
@@ -99,7 +100,7 @@ contract PBTLPStaking {
             uint256 pending = ((user.amount * pool.accPbtPerShare) / 1e12) - user.rewardDebt;
             if (pending > 0) {
                 pbtForRewards -= pending;
-                pbt.transfer(msg.sender, pending);
+                PBT.transfer(msg.sender, pending);
             }
         }
 
@@ -128,7 +129,7 @@ contract PBTLPStaking {
 
         if (pending > 0) {
             pbtForRewards -= pending;
-            pbt.transfer(msg.sender, pending);
+            PBT.transfer(msg.sender, pending);
         }
 
         if (_amount > 0) {
@@ -174,7 +175,7 @@ contract PBTLPStaking {
         }
 
         uint256 pbtReward = (blockToUse - pool.lastRewardBlock) * pbtPerBlock;
-        require(pbt.balanceOf(address(this)) - pbtForRewards >= pbtReward, "Insufficient PBT tokens for rewards");
+        require(PBT.balanceOf(address(this)) - pbtForRewards >= pbtReward, "Insufficient rewards");
         pbtForRewards += pbtReward;
         pool.accPbtPerShare += ((pbtReward * 1e12)/lpSupply);
         pool.lastRewardBlock = blockToUse;
