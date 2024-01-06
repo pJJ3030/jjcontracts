@@ -54,3 +54,32 @@ To add the private key of a deployer account, assign the following variables
 ```
 PRIVATE_KEY=...
 ```
+
+# Audit Comments Reply
+
+### F-2024-0366
+Fixed in b889fb5ce288670d9023898eff132c40a9ee371b
+
+### F-2024-0373
+The project will ensure that at least 1 PBT token is staked for the entire duration of reward period (by staking 1 PBT before the start block) - thus ensuring no rewards are stuck behind in the contract.
+
+### F-2024-0378
+Fixed in 59bcb90a775f5f6ad8ff0811013ee5ace00222a2
+
+### F-2024-0364
+Fixed in 334ed36b177689e498631eabfa9b2ba5b09eb324 and b889fb5ce288670d9023898eff132c40a9ee371b
+
+### F-2024-0370
+Provided appropriate comments in 59bcb90a775f5f6ad8ff0811013ee5ace00222a2
+
+### F-2024-0365
+Fixed in 59bcb90a775f5f6ad8ff0811013ee5ace00222a2
+
+### F-2024-0367
+Fixed in 59bcb90a775f5f6ad8ff0811013ee5ace00222a2
+
+### F-2024-0369
+Fixed in 59bcb90a775f5f6ad8ff0811013ee5ace00222a2
+
+### F-2024-0372
+We deliberately chose not to penalize legitimate users (by imposing extra gas consumption via a check) merely to prevent stray users from depositing after the reward period. Any user who deposits after the reward period can immediately withdraw their tokens without any penalty or loss of any kind.
