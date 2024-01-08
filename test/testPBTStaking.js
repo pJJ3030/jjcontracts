@@ -50,8 +50,14 @@ describe("PBT Staking", function () {
 
         await pbt.transfer(addr1.address, oneUnit.mul(1_000_000));
         await pbt.transfer(addr2.address, oneUnit.mul(1_000_000));
+	});
 
-        await pbt.transfer(pbtStaking.address, oneUnit.mul(10_000_000));
+	it("Bad constructor params", async function () {
+		let PBTStaking = await ethers.getContractFactory("PBTStaking");
+		let currentBlock = await getCurrentBlock();
+		await expect(
+			PBTStaking.deploy(pbt.address, pbtPerBlock, currentBlock-1, pbtPerBlock.mul(endBlock-startBlock))
+		).to.be.revertedWith("StartBlock must be in the future");
 	});
 
 	it("Single user - Pending PBT", async function () {
@@ -93,9 +99,22 @@ describe("PBT Staking", function () {
 		expect(await pbtStaking.pendingPbt(addr2.address)).to.equal(pbtPerBlock.mul(duration / 2));
 	});
 
+	it("Single user - Pending PBT 4", async function () {
+		const depositAmount = oneUnit.mul(1000);
+		const duration = 10;
+
+		await mineBlocks(duration);
+		let currentBlock = await getCurrentBlock();
+		await mineBlocks(endBlock-currentBlock + 1);
+
+		let pendingRewards = await pbtStaking.pendingPbt(addr1.address);
+		expect(pendingRewards).to.equal(0);
+	});
+
 	it("Single user - Multi deposit", async function () {
 		const depositAmount = oneUnit.mul(1000);
 		const duration = 10;
+		await pbt.transfer(pbtStaking.address, oneUnit.mul(40_000));
 
 		let startingBalance = await pbt.balanceOf(addr1.address);
 		await mineBlocks(duration);
@@ -112,6 +131,7 @@ describe("PBT Staking", function () {
 	it("Single user - Withdraw", async function () {
 		const depositAmount = oneUnit.mul(1000);
 		const duration = 10;
+		await pbt.transfer(pbtStaking.address, oneUnit.mul(40_000));
 
 		let startingBalance = await pbt.balanceOf(addr1.address);
 		await mineBlocks(duration);
@@ -123,9 +143,36 @@ describe("PBT Staking", function () {
 		expect(await pbt.balanceOf(addr1.address)).to.equal(startingBalance.add(pbtPerBlock.mul(duration)));
 	});
 
+	it("Single user - Withdraw Too Much", async function () {
+		const depositAmount = oneUnit.mul(1000);
+		const duration = 10;
+
+		let startingBalance = await pbt.balanceOf(addr1.address);
+		await mineBlocks(duration);
+		await pbtStaking.connect(addr1).deposit(depositAmount);
+
+		await mineBlocks(duration - 1);
+
+		await expect(pbtStaking.connect(addr1).withdraw(depositAmount.add(1))).to.be.revertedWith("Withdrawal exceeds balance");
+	});
+
+	it("Single user - Insufficient rewards", async function () {
+		const depositAmount = oneUnit.mul(1000);
+		const duration = 10;
+
+		let startingBalance = await pbt.balanceOf(addr1.address);
+		await mineBlocks(duration);
+		await pbtStaking.connect(addr1).deposit(depositAmount);
+
+		await mineBlocks(duration - 1);
+
+		await expect(pbtStaking.connect(addr1).withdraw(depositAmount)).to.be.revertedWith("Insufficient PBT for all rewards");
+	});
+
 	it("Single user - Withdraw After End time", async function () {
 		const depositAmount = oneUnit.mul(1000);
 		const duration = 40;
+		await pbt.transfer(pbtStaking.address, oneUnit.mul(40_000));
 
 		let startingBalance = await pbt.balanceOf(addr1.address);
 		await pbtStaking.connect(addr1).deposit(depositAmount);
@@ -171,6 +218,7 @@ describe("PBT Staking", function () {
 	it("Single user - Claim rewards", async function () {
 		const depositAmount = oneUnit.mul(1000);
 		const duration = 10;
+		await pbt.transfer(pbtStaking.address, oneUnit.mul(40_000));
 
 		let startingBalance = await pbt.balanceOf(addr1.address);
 		await mineBlocks(duration);

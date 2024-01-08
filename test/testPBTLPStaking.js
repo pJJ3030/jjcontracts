@@ -1,5 +1,5 @@
 const { expect } = require("chai");
-const { ethers } = require("hardhat");
+const { ethers, network } = require("hardhat");
 
 async function mineBlocks(n) {
 	for (var i = 0; i < n; i++) {
@@ -58,8 +58,18 @@ describe("PBT LP Staking", function () {
 
         await lp.transfer(addr1.address, oneUnit.mul(1_000_000));
         await lp.transfer(addr2.address, oneUnit.mul(1_000_000));
+	});
 
-        await pbt.transfer(pbtLPStaking.address, oneUnit.mul(10_000_000));
+	it("Bad constructor params", async function () {
+		let PBTLPStaking = await ethers.getContractFactory("PBTLPStaking");
+		let currentBlock = await getCurrentBlock();
+		await expect(
+			PBTLPStaking.deploy(pbt.address, lp.address, pbtPerBlock, currentBlock-1, pbtPerBlock.mul(endBlock-startBlock))
+		).to.be.revertedWith("StartBlock must be in the future");
+
+		await expect(
+			PBTLPStaking.deploy(pbt.address, pbt.address, pbtPerBlock, currentBlock+5, pbtPerBlock.mul(endBlock-startBlock))
+		).to.be.revertedWith("LP token must not be PBT");
 	});
 
 	it("Single user - Pending PBT", async function () {
@@ -82,7 +92,6 @@ describe("PBT LP Staking", function () {
 		let currentBlock = await getCurrentBlock();
 		await pbtLPStaking.connect(addr1).deposit(depositAmount);
 		await mineBlocks(endBlock-currentBlock);
-
 		let pendingRewards = await pbtLPStaking.pendingPbt(addr1.address);
 		expect(pendingRewards).to.equal(pbtPerBlock.mul(endBlock-currentBlock-1));
 	});
@@ -93,25 +102,22 @@ describe("PBT LP Staking", function () {
 
 		await mineBlocks(duration);
 		let currentBlock = await getCurrentBlock();
-		// await pbtLPStaking.connect(addr1).deposit(depositAmount);
 		await mineBlocks(endBlock-currentBlock);
 
 		let pendingRewards = await pbtLPStaking.pendingPbt(addr1.address);
 		expect(pendingRewards).to.equal(0);
 	});
 
-	it("Two users - Pending PBT", async function () {
+	it("Single user - Pending PBT 4", async function () {
 		const depositAmount = oneUnit.mul(1000);
 		const duration = 10;
 
 		await mineBlocks(duration);
-		await pbtLPStaking.connect(addr1).deposit(depositAmount);
-		await mineBlocks(duration - 1);
-		await pbtLPStaking.connect(addr2).deposit(depositAmount);
-		await mineBlocks(duration);
+		let currentBlock = await getCurrentBlock();
+		await mineBlocks(endBlock-currentBlock + 1);
 
-		expect(await pbtLPStaking.pendingPbt(addr1.address)).to.equal(pbtPerBlock.mul(duration * 1.5));
-		expect(await pbtLPStaking.pendingPbt(addr2.address)).to.equal(pbtPerBlock.mul(duration / 2));
+		let pendingRewards = await pbtLPStaking.pendingPbt(addr1.address);
+		expect(pendingRewards).to.equal(0);
 	});
 
 	it("Single user - Zero deposit", async function () {
@@ -126,9 +132,27 @@ describe("PBT LP Staking", function () {
 		expect(await pbt.balanceOf(addr1.address)).to.equal(startingBalance);
 	});
 
+	it("Single user - Successive Deposits", async function () {
+		await network.provider.send("evm_setAutomine", [false]);
+
+		const depositAmount = oneUnit.mul(1000);
+		const duration = 10;
+
+		let startingBalance = await pbt.balanceOf(addr1.address);
+		await mineBlocks(duration);
+		await pbtLPStaking.connect(addr1).deposit(depositAmount);
+		await pbtLPStaking.connect(addr1).deposit(depositAmount);
+		await pbtLPStaking.connect(addr1).deposit(0);
+		await mineBlocks(duration);
+
+		expect(await pbt.balanceOf(addr1.address)).to.equal(startingBalance);
+		await network.provider.send("evm_setAutomine", [true]);
+	});
+
 	it("Single user - Multi deposit", async function () {
 		const depositAmount = oneUnit.mul(1000);
 		const duration = 10;
+		await pbt.transfer(pbtLPStaking.address, oneUnit.mul(40_000));
 
 		let startingBalance = await pbt.balanceOf(addr1.address);
 		await mineBlocks(duration);
@@ -142,9 +166,27 @@ describe("PBT LP Staking", function () {
 		expect(await pbt.balanceOf(addr1.address)).to.equal(startingBalance.add(pbtPerBlock.mul(duration*2)));
 	});
 
+	it("Single user - Multi deposit 2", async function () {
+		const depositAmount = oneUnit.mul(1000);
+		const duration = 10;
+		await pbt.transfer(pbtLPStaking.address, oneUnit.mul(40_000));
+
+		let startingBalance = await pbt.balanceOf(addr1.address);
+		await mineBlocks(duration);
+		await pbtLPStaking.connect(addr1).deposit(depositAmount);
+		await mineBlocks(duration-2);
+		await pbtLPStaking.connect(addr1).deposit(0);
+		await mineBlocks(duration);
+
+		let deposit = await pbtLPStaking.userInfo(addr1.address);
+		await pbtLPStaking.connect(addr1).withdraw(deposit[0]);
+		expect(await pbt.balanceOf(addr1.address)).to.equal(startingBalance.add(pbtPerBlock.mul(duration*2)));
+	});
+
 	it("Single user - Zero Withdraw", async function () {
 		const depositAmount = oneUnit.mul(1000);
 		const duration = 10;
+		await pbt.transfer(pbtLPStaking.address, oneUnit.mul(40_000));
 
 		let startingBalance = await pbt.balanceOf(addr1.address);
 		await mineBlocks(duration);
@@ -159,6 +201,7 @@ describe("PBT LP Staking", function () {
 	it("Single user - Withdraw", async function () {
 		const depositAmount = oneUnit.mul(1000);
 		const duration = 10;
+		await pbt.transfer(pbtLPStaking.address, oneUnit.mul(40_000));
 
 		let startingBalance = await pbt.balanceOf(addr1.address);
 		await mineBlocks(duration);
@@ -170,9 +213,51 @@ describe("PBT LP Staking", function () {
 		expect(await pbt.balanceOf(addr1.address)).to.equal(startingBalance.add(pbtPerBlock.mul(duration)));
 	});
 
+	it("Single user - Withdraw Too Much", async function () {
+		const depositAmount = oneUnit.mul(1000);
+		const duration = 10;
+
+		let startingBalance = await pbt.balanceOf(addr1.address);
+		await mineBlocks(duration);
+		await pbtLPStaking.connect(addr1).deposit(depositAmount);
+
+		await mineBlocks(duration - 1);
+
+		await expect(pbtLPStaking.connect(addr1).withdraw(depositAmount.add(1))).to.be.revertedWith("withdraw: not enough balance");
+	});
+
+	it("Single user - Insufficient rewards", async function () {
+		const depositAmount = oneUnit.mul(1000);
+		const duration = 10;
+
+		let startingBalance = await pbt.balanceOf(addr1.address);
+		await mineBlocks(duration);
+		await pbtLPStaking.connect(addr1).deposit(depositAmount);
+
+		await mineBlocks(duration - 1);
+
+		await expect(pbtLPStaking.connect(addr1).withdraw(depositAmount)).to.be.revertedWith("Insufficient rewards");
+	});
+
+	it("Single user - Deposit after EndBlock", async function () {
+		const depositAmount = oneUnit.mul(1000);
+		const duration = 10;
+		await pbt.transfer(pbtLPStaking.address, oneUnit.mul(40_000));
+
+		let startingBalance = await pbt.balanceOf(addr1.address);
+		await mineBlocks(endBlock-startBlock + 2);
+		await pbtLPStaking.connect(addr1).deposit(depositAmount);
+
+		await mineBlocks(duration - 1);
+
+		await pbtLPStaking.connect(addr1).withdraw(depositAmount);
+		expect(await pbt.balanceOf(addr1.address)).to.equal(0);
+	});
+
 	it("Single user - Withdraw After End time", async function () {
 		const depositAmount = oneUnit.mul(1000);
 		const duration = 40;
+		await pbt.transfer(pbtLPStaking.address, oneUnit.mul(40_000));
 
 		let startingBalance = await pbt.balanceOf(addr1.address);
 		await pbtLPStaking.connect(addr1).deposit(depositAmount);
