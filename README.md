@@ -1,15 +1,17 @@
 # Specifications
 ### Project Overview/Purpose
-The projects purpose is to have launch a prediction market using the gnosis conditional token frame work. The PolyBet Token serves as the governance token of the prediction market and it will distributed to users to incentivize certain actions such as adding liquidity to the pool which enables trading.
+The project's purpose is to launch a prediction market using the gnosis conditional token framework. The PolyBet Token serves as the governance token of the prediction market, and it will be distributed to users to incentivize certain actions, such as adding liquidity to the pool, which enables trading.
 
 ### Functional, Technical Requirements
-This repository consists of 2 Staking, and 1 Merkle distribution contracts. *All 3 contracts are mutually independent*, and do not interact with each other on-chain in any way.
+This repository consists of 2 Staking and 1 Merkle distribution contract. *All 3 contracts are mutually independent* and do not interact with each other on-chain in any way.
 
 Functional and Technical Requirements can be found as follows:
 
 Merkle: [Merkle requirements](README_Merkle.md) document
 
 Staking: [Staking requirements](README_Staking.md) document
+
+NFT based Airdrop: [NFT based Airdrop requirements](README_Airdrop.md) document
 
 # Getting Started
 Recommended Node version is 20.0.0 and above.
